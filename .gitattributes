@@ -1,0 +1,6 @@
+outputs/**/*.png linguist-generated=true
+outputs/**/*.csv linguist-generated=true
+outputs/**/*.html linguist-generated=true
+docs/index.html linguist-generated=true
+*.pdf binary
+*.xlsx binary

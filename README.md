@@ -50,3 +50,5 @@ After enabling GitHub Pages from the `/docs` folder, the dashboard is available 
 ## Disclosure
 
 All company data, transaction terms and outputs are synthetic and created for educational purposes. This is not live market data or an investment recommendation.
+
+Implementation and documentation were produced with AI assistance and then reviewed, tested and structured as an educational case study.
