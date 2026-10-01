@@ -196,7 +196,7 @@ def main() -> None:
     _save_driver_sensitivity(drivers, out)
     _save_bid_gap_chart(p, out)
     _save_scenario_cases(cases, out)
-    build_dashboard(df, curve, drivers, cases, scorecard, p, out / "interactive_ic_dashboard.html")
+    build_dashboard(df, curve, drivers, cases, scorecard, p, out / "model_results_dashboard.html")
 
     p50 = bid_ceiling_for_probability(curve, 0.50)
     p75 = bid_ceiling_for_probability(curve, 0.75)

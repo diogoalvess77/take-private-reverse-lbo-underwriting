@@ -1,0 +1,299 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Project Redwood - Interactive Underwriting Dashboard</title><style>
+body{margin:0;font-family:Inter,Arial,sans-serif;background:#F8FAFC;color:#0B1F33}.wrap{max-width:1280px;margin:0 auto;padding:26px 22px 48px}.hero{background:#0B1F33;color:white;border-radius:20px;padding:28px 30px 22px;box-shadow:0 10px 24px rgba(11,31,51,.16)}.eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#CBD5E1;font-weight:700}h1{font-size:34px;line-height:1.06;margin:8px 0 10px}.sub{max-width:860px;color:#E2E8F0;line-height:1.5}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:18px}.kpi{background:white;color:#0B1F33;border-radius:14px;padding:14px 16px;border:1px solid #E2E8F0}.kpi .v{font-size:24px;font-weight:800;margin-bottom:3px}.kpi .l{font-size:12px;color:#64748B}.layout{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:20px}.panel{background:white;border:1px solid #E2E8F0;border-radius:16px;padding:18px 18px 12px;position:sticky;top:16px;height:fit-content}.panel h3{margin:0 0 8px;font-size:18px}.panel p{font-size:13px;color:#64748B;line-height:1.45}.ctrl{margin:12px 0 14px}.ctrl label{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:4px}.ctrl input[type=range]{width:100%}.small{font-size:12px;color:#64748B}.btns{display:flex;gap:10px;margin-top:8px}button{border:0;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}.btn-primary{background:#2563EB;color:white}.btn-secondary{background:#E2E8F0;color:#0B1F33}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:white;border:1px solid #E2E8F0;border-radius:16px;padding:10px 10px 0}.callout{background:#FFF7ED;border-left:5px solid #D97706;border-radius:12px;padding:16px 18px;margin:18px 0;line-height:1.5}.foot{color:#64748B;font-size:12px;line-height:1.45;margin-top:18px}.tablecard{background:white;border:1px solid #E2E8F0;border-radius:16px;padding:16px;margin-top:18px}.tablecard table{width:100%;border-collapse:collapse;font-size:13px}.tablecard th,.tablecard td{padding:8px 6px;border-bottom:1px solid #E5E7EB;text-align:left}@media (max-width:1024px){.layout{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.panel{position:static}}</style></head><body><div class="wrap"><section class="hero"><div class="eyebrow">Take-Private Reverse LBO & Probabilistic Underwriting</div><h1>Project Redwood — Interactive Investment Committee Dashboard</h1><div class="sub">Change the transaction assumptions and the dashboard recalculates the deterministic LBO case, a synthetic underwriting simulation and the key decision graphics directly in the browser.</div><div class="kpis" id="kpis"></div></section><div class="layout"><aside class="panel"><h3>Adjust assumptions</h3><p>Use the controls below to test how price, leverage and operating assumptions change the bid discipline.</p><div class="ctrl"><label>Entry Multiple <span id="entryMultipleVal"></span></label><input type="range" id="entryMultiple" min="6.5" max="10.0" step="0.1" value="8.5"></div><div class="ctrl"><label>Exit Multiple <span id="exitMultipleVal"></span></label><input type="range" id="exitMultiple" min="7.0" max="11.5" step="0.1" value="9.5"></div><div class="ctrl"><label>Target IRR <span id="targetIRRVal"></span></label><input type="range" id="targetIRR" min="15" max="35" step="1" value="25"></div><div class="ctrl"><label>Base Rate <span id="baseRateVal"></span></label><input type="range" id="baseRate" min="1.0" max="8.0" step="0.25" value="3.5"></div><div class="ctrl"><label>Growth Adjustment <span id="growthAdjVal"></span></label><input type="range" id="growthAdj" min="-3.0" max="3.0" step="0.25" value="0"></div><div class="ctrl"><label>Margin Adjustment <span id="marginAdjVal"></span></label><input type="range" id="marginAdj" min="-2.0" max="2.0" step="0.25" value="0"></div><div class="ctrl"><label>Leverage Adjustment <span id="leverageAdjVal"></span></label><input type="range" id="leverageAdj" min="-1.0" max="1.0" step="0.1" value="0"></div><div class="ctrl"><label>Simulation Paths <span id="pathsVal"></span></label><input type="range" id="paths" min="400" max="3000" step="200" value="1200"></div><div class="btns"><button class="btn-primary" id="rerun">Recalculate</button><button class="btn-secondary" id="reset">Reset defaults</button></div><div class="small" style="margin-top:10px">Interactive browser version for demonstration purposes. All assumptions and outputs are synthetic.</div></aside><main><div class="callout" id="decision"></div><section class="grid"><div class="card"><div id="fig1"></div></div><div class="card"><div id="fig2"></div></div><div class="card"><div id="fig3"></div></div><div class="card"><div id="fig4"></div></div></section><div class="tablecard"><h3 style="margin:0 0 10px">Key outputs</h3><table id="detailTable"></table></div><div class="foot">All company data, transaction terms and outputs are synthetic and created for educational purposes.</div></main></div></div><script src="https://cdn.plot.ly/plotly-3.3.1.min.js"></script><script>
+const BASE = {"ltmRevenue": 325.0, "ltmMargin": 0.19, "growth": [0.07, 0.06, 0.05, 0.04, 0.04], "margins": [0.195, 0.2, 0.205, 0.208, 0.21], "daPct": 0.03, "capexPct": 0.032, "nwcPct": 0.085, "taxRate": 0.25, "minimumCash": 10.0, "transactionFeePctEv": 0.02, "financingFeePctDebt": 0.02, "managementRolloverPctEquity": 0.08, "holdPeriod": 5, "entryMultiple": 8.5, "exitMultiple": 9.5, "targetIRR": 25.0, "targetMOIC": 2.5, "tlbLeverage": 4.0, "tlbSpread": 4.25, "baseRate": 3.5, "baseRateFloor": 2.0, "tlbAmort": 0.01, "secondLienLev": 1.0, "secondLienCoupon": 9.5, "rcfLev": 0.5, "rcfSpread": 4.75, "cashSweep": 0.75};
+const DEFAULTS = {"entryMultiple": 8.5, "exitMultiple": 9.5, "targetIRR": 25.0, "baseRate": 3.5, "growthAdj": 0.0, "marginAdj": 0.0, "leverageAdj": 0.0, "paths": 1200};
+const STATE = JSON.parse(JSON.stringify(BASE));
+Object.assign(STATE, DEFAULTS);
+
+function ltmEbitda(s) { return s.ltmRevenue * s.ltmMargin; }
+function debtSources(s) { return (s.tlbLeverage + s.leverageAdj) * ltmEbitda(s) + s.secondLienLev * ltmEbitda(s); }
+function sponsorEquity(entryMultiple, s) {
+  const debt = debtSources(s);
+  const ev = entryMultiple * ltmEbitda(s);
+  const financingFees = s.financingFeePctDebt * debt;
+  const uses = ev + s.minimumCash + s.transactionFeePctEv * ev + financingFees;
+  const totalEquity = uses - debt;
+  return (1 - s.managementRolloverPctEquity) * totalEquity;
+}
+
+function runPath(growthArr, marginArr, baseRates, exitMultiple, entryMultiple, s) {
+  let revenue = s.ltmRevenue;
+  let priorNwc = revenue * s.nwcPct;
+  let cash = s.minimumCash;
+  let tlb = (s.tlbLeverage + s.leverageAdj) * ltmEbitda(s);
+  let secondLien = s.secondLienLev * ltmEbitda(s);
+  let rcf = 0;
+  const originalTlb = tlb;
+  let minCoverage = 1e9;
+  let maxRcf = 0;
+  let lastEbitda = ltmEbitda(s);
+
+  for (let y = 0; y < s.holdPeriod; y++) {
+    revenue *= (1 + growthArr[y]);
+    const ebitda = revenue * marginArr[y];
+    const da = revenue * s.daPct;
+    const ebit = ebitda - da;
+    const capex = revenue * s.capexPct;
+    const nwc = revenue * s.nwcPct;
+    const deltaNwc = nwc - priorNwc;
+    const taxes = Math.max(ebit, 0) * s.taxRate;
+    const preFcf = ebitda - capex - deltaNwc - taxes;
+
+    const tlbRate = Math.max(baseRates[y], s.baseRateFloor) + s.tlbSpread;
+    const rcfRate = Math.max(baseRates[y], s.baseRateFloor) + s.rcfSpread;
+    const totalInterest = tlb * (tlbRate / 100) + secondLien * (s.secondLienCoupon / 100) + rcf * (rcfRate / 100);
+    minCoverage = Math.min(minCoverage, totalInterest > 0 ? ebitda / totalInterest : 999);
+
+    const mandatory = Math.min(originalTlb * s.tlbAmort, tlb);
+    let cashBefore = cash + preFcf - totalInterest - mandatory;
+    const rcfCap = s.rcfLev * ltmEbitda(s);
+
+    if (cashBefore < s.minimumCash) {
+      const draw = Math.min(s.minimumCash - cashBefore, Math.max(rcfCap - rcf, 0));
+      rcf += draw;
+      cashBefore += draw;
+    }
+    if (cashBefore > s.minimumCash && rcf > 0) {
+      const repay = Math.min(cashBefore - s.minimumCash, rcf);
+      rcf -= repay;
+      cashBefore -= repay;
+    }
+
+    const excess = Math.max(cashBefore - s.minimumCash, 0);
+    const tlbSweep = Math.min(s.cashSweep * excess, Math.max(tlb - mandatory, 0));
+    cash = cashBefore - tlbSweep;
+    tlb = Math.max(tlb - mandatory - tlbSweep, 0);
+    maxRcf = Math.max(maxRcf, rcf);
+    priorNwc = nwc;
+    lastEbitda = ebitda;
+  }
+
+  const netDebt = (tlb + secondLien + rcf) - cash;
+  const exitEv = lastEbitda * exitMultiple;
+  const exitEquity = Math.max(exitEv - netDebt, 0);
+  const sponsorExit = (1 - s.managementRolloverPctEquity) * exitEquity;
+  const sponsorInitial = sponsorEquity(entryMultiple, s);
+  const moic = sponsorInitial > 0 ? sponsorExit / sponsorInitial : 0;
+  const irr = moic > 0 ? Math.pow(moic, 1 / s.holdPeriod) - 1 : -1;
+
+  return { exitEbitda: lastEbitda, exitNetDebt: netDebt, exitEv, sponsorExit, sponsorInitial, grossMoic: moic, grossIrr: irr, maxRcf, minCoverage };
+}
+
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function simulatePaths(s) {
+  const out = [];
+  for (let i = 0; i < s.paths; i++) {
+    const macro = randn(), execution = randn(), rates = randn(), valuation = randn();
+    const growthShift = 0.015 * (0.72 * macro + 0.52 * execution) + s.growthAdj / 100;
+    const marginShift = 0.012 * (0.35 * macro + 0.86 * execution) + s.marginAdj / 100;
+    const rateShift = 0.010 * (-0.45 * macro + 0.82 * rates) + (s.baseRate - BASE.baseRate) / 100;
+    const multShift = 0.85 * (0.45 * macro + 0.30 * execution - 0.45 * rates + 0.60 * valuation);
+    const g = [], m = [], r = [];
+    for (let y = 0; y < s.holdPeriod; y++) {
+      g.push(Math.max(-0.05, Math.min(0.18, BASE.growth[y] + growthShift + randn() * 0.006)));
+      m.push(Math.max(0.12, Math.min(0.30, BASE.margins[y] + marginShift + randn() * 0.003)));
+      r.push(Math.max(0.5, Math.min(10.0, s.baseRate + rateShift * 100 + randn() * 0.25)));
+    }
+    const exitMultiple = Math.max(6.0, Math.min(13.0, s.exitMultiple + multShift));
+    const path = runPath(g, m, r, exitMultiple, s.entryMultiple, s);
+    path.exitMultiple = exitMultiple;
+    path.avgRevenueGrowth = g.reduce((a, b) => a + b, 0) / g.length;
+    path.exitMargin = m[m.length - 1];
+    path.avgBaseRate = r.reduce((a, b) => a + b, 0) / r.length;
+    path.irrHurdleMet = path.grossIrr >= s.targetIRR / 100;
+    out.push(path);
+  }
+  return out;
+}
+
+function percentile(arr, p) {
+  const s = [...arr].sort((a, b) => a - b);
+  const idx = (s.length - 1) * p;
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (idx - lo);
+}
+
+function corr(a, b) {
+  const n = a.length;
+  const ma = a.reduce((x, y) => x + y, 0) / n;
+  const mb = b.reduce((x, y) => x + y, 0) / n;
+  let num = 0, da = 0, db = 0;
+  for (let i = 0; i < n; i++) {
+    const xa = a[i] - ma, xb = b[i] - mb;
+    num += xa * xb; da += xa * xa; db += xb * xb;
+  }
+  return num / Math.sqrt(da * db);
+}
+
+function reverseLbo(s, base) {
+  const sponsorExit = base.sponsorExit;
+  const eqIrr = sponsorExit / Math.pow(1 + s.targetIRR / 100, s.holdPeriod);
+  const eqMoic = sponsorExit / s.targetMOIC;
+  const maxSponsorEquity = Math.min(eqIrr, eqMoic);
+  const totalEquity = maxSponsorEquity / (1 - s.managementRolloverPctEquity);
+  const maxEv = (totalEquity + debtSources(s) - s.minimumCash - s.financingFeePctDebt * debtSources(s)) / (1 + s.transactionFeePctEv);
+  return { maxMultiple: maxEv / ltmEbitda(s), bidGap: maxEv / ltmEbitda(s) - s.entryMultiple };
+}
+
+function hurdleSolver(s, base) {
+  const reqSponsorExit = base.sponsorInitial * Math.pow(1 + s.targetIRR / 100, s.holdPeriod);
+  const reqExitEquity = reqSponsorExit / (1 - s.managementRolloverPctEquity);
+  const reqExitEv = reqExitEquity + base.exitNetDebt;
+  const reqExitEbitda = reqExitEv / s.exitMultiple;
+  const reqExitMultiple = reqExitEv / base.exitEbitda;
+  const reqNetDebt = base.exitEv - reqExitEquity;
+  return { incrementEbitda: reqExitEbitda / base.exitEbitda - 1, requiredExitMultiple: reqExitMultiple, additionalDebtPaydown: base.exitNetDebt - reqNetDebt };
+}
+
+function probabilityCurve(paths, s) {
+  const sponsorExits = paths.map(d => d.sponsorExit);
+  const xs = [], probs = [];
+  for (let m = 6.5; m <= 9.5 + 1e-9; m += 0.1) {
+    const init = sponsorEquity(Math.round(m * 10) / 10, s);
+    const irrs = sponsorExits.map(x => Math.pow(x / init, 1 / s.holdPeriod) - 1);
+    xs.push(+m.toFixed(1));
+    probs.push(irrs.filter(x => x >= s.targetIRR / 100).length / irrs.length * 100);
+  }
+  return { xs, probs };
+}
+
+function scenarios(s) {
+  const mk = (dg, dm, dr, de) => runPath(BASE.growth.map(v => v + dg), BASE.margins.map(v => v + dm), Array(s.holdPeriod).fill(s.baseRate + dr), s.exitMultiple + de, s.entryMultiple, s);
+  return [
+    { name: 'Downside', ...mk(-0.025 + s.growthAdj / 100, -0.012 + s.marginAdj / 100, 1.5, -1.0) },
+    { name: 'Base', ...mk(0 + s.growthAdj / 100, 0 + s.marginAdj / 100, 0, 0) },
+    { name: 'Upside', ...mk(0.020 + s.growthAdj / 100, 0.010 + s.marginAdj / 100, -0.5, 0.75) }
+  ];
+}
+
+function valueLabel(id, val) {
+  if (['entryMultiple', 'exitMultiple'].includes(id)) return (+val).toFixed(1) + 'x';
+  if (['targetIRR', 'baseRate', 'growthAdj', 'marginAdj'].includes(id)) return (+val).toFixed(2).replace('.00', '') + '%';
+  if (id === 'leverageAdj') return ((+val) >= 0 ? '+' : '') + (+val).toFixed(1) + 'x';
+  return Math.round(val).toLocaleString();
+}
+
+function updateLabels() {
+  ['entryMultiple', 'exitMultiple', 'targetIRR', 'baseRate', 'growthAdj', 'marginAdj', 'leverageAdj', 'paths'].forEach(id => {
+    document.getElementById(id + 'Val').textContent = valueLabel(id, document.getElementById(id).value);
+  });
+}
+
+function render() {
+  ['entryMultiple', 'exitMultiple', 'targetIRR', 'baseRate', 'growthAdj', 'marginAdj', 'leverageAdj', 'paths'].forEach(id => {
+    STATE[id] = +document.getElementById(id).value;
+  });
+  updateLabels();
+
+  const growth = BASE.growth.map(v => v + STATE.growthAdj / 100);
+  const margins = BASE.margins.map(v => v + STATE.marginAdj / 100);
+  const rates = Array(STATE.holdPeriod).fill(STATE.baseRate);
+  const base = runPath(growth, margins, rates, STATE.exitMultiple, STATE.entryMultiple, STATE);
+  const rev = reverseLbo(STATE, base);
+  const hurd = hurdleSolver(STATE, base);
+  const paths = simulatePaths(STATE);
+  const irrArr = paths.map(d => d.grossIrr * 100);
+  const curve = probabilityCurve(paths, STATE);
+  const scen = scenarios(STATE);
+  const probAtAsk = paths.filter(d => d.irrHurdleMet).length / paths.length * 100;
+
+  let p50 = NaN, p75 = NaN;
+  curve.xs.forEach((x, i) => {
+    if (curve.probs[i] >= 50) p50 = x;
+    if (curve.probs[i] >= 75) p75 = x;
+  });
+
+  const kpis = [
+    ['Seller ask', STATE.entryMultiple.toFixed(1) + 'x'],
+    ['Base-case gross IRR', (base.grossIrr * 100).toFixed(1) + '%'],
+    ['Deterministic max bid', rev.maxMultiple.toFixed(1) + 'x'],
+    ['50% probability bid ceiling', isNaN(p50) ? 'n/a' : p50.toFixed(1) + 'x'],
+    ['P(IRR ≥ target) at ask', probAtAsk.toFixed(1) + '%']
+  ];
+  document.getElementById('kpis').innerHTML = kpis.map(k => '<div class="kpi"><div class="v">' + k[1] + '</div><div class="l">' + k[0] + '</div></div>').join('');
+
+  document.getElementById('decision').innerHTML =
+    '<strong>IC framing:</strong> At an entry multiple of <strong>' + STATE.entryMultiple.toFixed(1) + 'x</strong>, the deterministic case produces <strong>' + (base.grossIrr * 100).toFixed(1) + '% gross IRR</strong> and <strong>' + base.grossMoic.toFixed(2) + 'x MOIC</strong>. ' +
+    'The reverse LBO implies a maximum deterministic bid of <strong>' + rev.maxMultiple.toFixed(1) + 'x</strong>, while the probability engine suggests a <strong>' + (isNaN(p50) ? 'n/a' : p50.toFixed(1) + 'x') + '</strong> bid ceiling for at least a 50% chance of clearing the target IRR.';
+
+  Plotly.newPlot('fig1', [{ type: 'histogram', x: irrArr, nbinsx: 40, marker: { color: '#2563EB' }, opacity: 0.82 }], {
+    title: { text: 'Gross IRR Distribution', x: 0 }, margin: { t: 45, l: 50, r: 10, b: 45 }, paper_bgcolor: 'white', plot_bgcolor: 'white', showlegend: false,
+    shapes: [
+      { type: 'line', x0: STATE.targetIRR, x1: STATE.targetIRR, y0: 0, y1: 1, yref: 'paper', line: { color: '#B91C1C', dash: 'dash' } },
+      { type: 'line', x0: percentile(irrArr, 0.5), x1: percentile(irrArr, 0.5), y0: 0, y1: 1, yref: 'paper', line: { color: '#0B1F33' } }
+    ],
+    annotations: [
+      { xref: 'x', yref: 'paper', x: STATE.targetIRR, y: 1.03, text: 'Target IRR', showarrow: false, font: { size: 11, color: '#B91C1C' } },
+      { xref: 'x', yref: 'paper', x: percentile(irrArr, 0.5), y: 1.10, text: 'Median', showarrow: false, font: { size: 11, color: '#0B1F33' } }
+    ],
+    xaxis: { title: 'Gross IRR (%)', gridcolor: '#E5E7EB' },
+    yaxis: { title: 'Path count', gridcolor: '#E5E7EB' }
+  }, { displaylogo: false, responsive: true });
+
+  Plotly.newPlot('fig2', [{ type: 'scatter', x: curve.xs, y: curve.probs, mode: 'lines+markers', line: { color: '#0F766E', width: 3 }, marker: { size: 6 } }], {
+    title: { text: 'Probability of Clearing the Target IRR', x: 0 }, margin: { t: 45, l: 50, r: 10, b: 45 }, paper_bgcolor: 'white', plot_bgcolor: 'white', showlegend: false,
+    shapes: [
+      { type: 'line', x0: STATE.entryMultiple, x1: STATE.entryMultiple, y0: 0, y1: 100, line: { color: '#B91C1C', dash: 'dash' } },
+      { type: 'line', x0: curve.xs[0], x1: curve.xs[curve.xs.length - 1], y0: 50, y1: 50, line: { color: '#64748B', dash: 'dash' } },
+      { type: 'line', x0: curve.xs[0], x1: curve.xs[curve.xs.length - 1], y0: 75, y1: 75, line: { color: '#64748B', dash: 'dot' } }
+    ],
+    xaxis: { title: 'Entry EV / EBITDA (x)', gridcolor: '#E5E7EB' },
+    yaxis: { title: 'Probability (%)', range: [0, 100], gridcolor: '#E5E7EB' }
+  }, { displaylogo: false, responsive: true });
+
+  const correlations = [
+    corr(paths.map(d => d.avgRevenueGrowth), paths.map(d => d.grossIrr)),
+    corr(paths.map(d => d.exitMargin), paths.map(d => d.grossIrr)),
+    corr(paths.map(d => d.exitMultiple), paths.map(d => d.grossIrr)),
+    corr(paths.map(d => d.avgBaseRate), paths.map(d => d.grossIrr)),
+    corr(paths.map(d => d.exitNetDebt), paths.map(d => d.grossIrr))
+  ];
+  const drv = ['Revenue growth', 'Exit EBITDA margin', 'Exit multiple', 'Average base rate', 'Exit net debt'];
+  Plotly.newPlot('fig3', [{ type: 'bar', x: correlations, y: drv, orientation: 'h', marker: { color: correlations.map(v => v >= 0 ? '#15803D' : '#B91C1C') } }], {
+    title: { text: 'What Drives Gross IRR?', x: 0 }, margin: { t: 45, l: 120, r: 10, b: 45 }, paper_bgcolor: 'white', plot_bgcolor: 'white', showlegend: false,
+    xaxis: { title: 'Correlation with gross IRR', gridcolor: '#E5E7EB' }
+  }, { displaylogo: false, responsive: true });
+
+  Plotly.newPlot('fig4', [
+    { type: 'bar', x: scen.map(s => s.name), y: scen.map(s => s.grossIrr * 100), name: 'Gross IRR (%)', marker: { color: '#2563EB' } },
+    { type: 'scatter', x: scen.map(s => s.name), y: scen.map(s => s.grossMoic), yaxis: 'y2', mode: 'lines+markers', name: 'Gross MOIC (x)', line: { color: '#0F766E', width: 3 } }
+  ], {
+    title: { text: 'Downside / Base / Upside Cases', x: 0 }, margin: { t: 45, l: 50, r: 50, b: 45 }, paper_bgcolor: 'white', plot_bgcolor: 'white',
+    shapes: [{ type: 'line', x0: -0.5, x1: 2.5, y0: STATE.targetIRR, y1: STATE.targetIRR, line: { color: '#B91C1C', dash: 'dash' } }],
+    yaxis: { title: 'Gross IRR (%)', gridcolor: '#E5E7EB' },
+    yaxis2: { title: 'Gross MOIC (x)', overlaying: 'y', side: 'right' }
+  }, { displaylogo: false, responsive: true });
+
+  const rows = [
+    ['Base-case gross IRR', (base.grossIrr * 100).toFixed(1) + '%'],
+    ['Base-case gross MOIC', base.grossMoic.toFixed(2) + 'x'],
+    ['Deterministic maximum bid', rev.maxMultiple.toFixed(2) + 'x'],
+    ['Bid gap vs seller ask', rev.bidGap.toFixed(2) + 'x'],
+    ['P(IRR ≥ target) at ask', probAtAsk.toFixed(1) + '%'],
+    ['50% probability bid ceiling', isNaN(p50) ? 'n/a' : p50.toFixed(2) + 'x'],
+    ['75% probability bid ceiling', isNaN(p75) ? 'n/a' : p75.toFixed(2) + 'x'],
+    ['Required uplift in exit EBITDA', (hurd.incrementEbitda * 100).toFixed(1) + '%'],
+    ['Required exit multiple', hurd.requiredExitMultiple.toFixed(2) + 'x'],
+    ['Additional debt paydown needed', '$' + hurd.additionalDebtPaydown.toFixed(1) + 'm']
+  ];
+  document.getElementById('detailTable').innerHTML = '<tr><th>Metric</th><th>Output</th></tr>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('');
+}
+
+['entryMultiple', 'exitMultiple', 'targetIRR', 'baseRate', 'growthAdj', 'marginAdj', 'leverageAdj', 'paths'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateLabels);
+});
+document.getElementById('rerun').addEventListener('click', render);
+document.getElementById('reset').addEventListener('click', () => {
+  Object.entries(DEFAULTS).forEach(([k, v]) => { document.getElementById(k).value = v; });
+  updateLabels();
+  render();
+});
+updateLabels();
+render();
+</script></body></html>
