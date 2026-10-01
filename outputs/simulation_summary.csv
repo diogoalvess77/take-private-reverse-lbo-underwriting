@@ -1,0 +1,16 @@
+Metric,Value,Units
+Simulated paths,10000.0,count
+Mean gross IRR,0.2190605574030804,%
+Median gross IRR,0.2220004536522513,%
+5th percentile gross IRR,0.10819195872074247,%
+95th percentile gross IRR,0.32025908569122996,%
+Median gross MOIC,2.7249393211861728,x
+5th percentile gross MOIC,1.6713791241621194,x
+95th percentile gross MOIC,4.011398653675955,x
+Probability IRR >= 25%,0.329,%
+Probability MOIC >= 2.5x,0.6254,%
+Probability both hurdles met,0.329,%
+Probability interest coverage < 2.0x,0.0064,%
+Probability RCF draw,0.0013,%
+Median exit net debt,170.75285311164478,$mm
+Median exit EV / EBITDA,9.499341439982514,x

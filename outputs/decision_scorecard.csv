@@ -1,0 +1,9 @@
+Metric,Value,Units
+Seller ask,8.5,x EBITDA
+Base-case gross IRR,0.22312377954987572,%
+Base-case gross MOIC,2.737486891869896,x
+Deterministic max bid,8.103026780323551,x EBITDA
+Bid gap vs ask,-0.3969732196764486,x EBITDA
+P(IRR >= 25%) at ask,0.329,%
+Risk-adjusted bid ceiling - 50% threshold,8.0,x EBITDA
+Risk-adjusted bid ceiling - 75% threshold,7.5,x EBITDA
